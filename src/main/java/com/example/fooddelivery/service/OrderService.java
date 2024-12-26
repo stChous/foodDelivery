@@ -2,6 +2,7 @@ package com.example.fooddelivery.service;
 
 import com.example.fooddelivery.entity.Order;
 import com.example.fooddelivery.entity.OrderDetail;
+
 import java.util.List;
 
 public interface OrderService {
@@ -10,4 +11,5 @@ public interface OrderService {
     void updateOrderStatus(Long id, String status);
     void deleteOrder(Long id);
     List<Order> getOrdersByStatus(String status);
+    List<Order> getAllOrders();
 }

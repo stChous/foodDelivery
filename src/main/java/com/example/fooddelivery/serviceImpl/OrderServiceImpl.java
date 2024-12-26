@@ -24,7 +24,7 @@ public class OrderServiceImpl implements OrderService {
         Order savedOrder = orderRepository.save(order);
 
         for (OrderDetail detail : orderDetails) {
-            detail.setOrderId(savedOrder.getId()); // Устанавливаем ID заказа для каждой детали
+            detail.setOrderId(savedOrder.getId());
             orderDetailRepository.save(detail);
         }
 
@@ -53,5 +53,10 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public List<Order> getOrdersByStatus(String status) {
         return orderRepository.findByStatus(status);
+    }
+
+    @Override
+    public List<Order> getAllOrders() {
+        return orderRepository.findAll();
     }
 }

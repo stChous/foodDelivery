@@ -1,64 +1,79 @@
 package com.example.fooddelivery.controller;
 
-import com.example.fooddelivery.dto.OrderRequest;
 import com.example.fooddelivery.entity.Order;
 import com.example.fooddelivery.entity.OrderDetail;
 import com.example.fooddelivery.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@RestController
+@Controller
 @RequestMapping("/orders")
 public class OrderController {
 
     @Autowired
     private OrderService orderService;
 
-    @PostMapping
-    public ResponseEntity<Long> createOrder(@RequestBody OrderRequest request) {
-        Order order = new Order();
-        order.setUserId(request.getUserId());
-        order.setCourierId(request.getCourierId());
-        order.setDeliveryAddress(request.getDeliveryAddress());
-        order.setStatus(request.getStatus());
+    @GetMapping("/all")
+    public String getAllOrders(Model model) {
+        List<Order> orders = orderService.getAllOrders();
+        model.addAttribute("orders", orders);
+        return "orders";
+    }
 
-        List<OrderDetail> orderDetails = request.getOrderDetails().stream().map(detailRequest -> {
+    @GetMapping("/new")
+    public String showCreateOrderForm(Model model) {
+        model.addAttribute("order", new Order());
+        return "create-order";
+    }
+
+    @PostMapping("/new")
+    public String createOrder(@ModelAttribute Order order) {
+        List<Long> dishIdList = List.of(1L, 2L);
+
+        List<OrderDetail> orderDetails = dishIdList.stream().map(dishId -> {
             OrderDetail detail = new OrderDetail();
-            detail.setDishId(detailRequest.getDishId());
-            detail.setQuantity(detailRequest.getQuantity());
+            detail.setDishId(dishId);
+            detail.setQuantity(2);
             return detail;
         }).toList();
+        order.setStatus("Очікує обробки");
+        orderService.createOrder(order, orderDetails);
 
-        Long orderId = orderService.createOrder(order, orderDetails);
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(orderId);
+        return "redirect:/orders/all";
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Order> getOrder(@PathVariable Long id) {
+    @GetMapping("/edit/{id}")
+    public String showEditOrderForm(@PathVariable Long id, Model model) {
         Order order = orderService.getOrderById(id);
-        return ResponseEntity.ok(order);
+        model.addAttribute("order", order);
+        return "edit-order";
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<String> updateOrderStatus(@PathVariable Long id, @RequestBody String status) {
-        orderService.updateOrderStatus(id, status);
-        return ResponseEntity.ok("Order status updated successfully");
+    @PostMapping("/edit/{id}")
+    public String updateOrder(@PathVariable Long id, @ModelAttribute Order order) {
+        orderService.updateOrderStatus(id, order.getStatus());
+        return "redirect:/orders/all";
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteOrder(@PathVariable Long id) {
+    @GetMapping("/delete/{id}")
+    public String deleteOrder(@PathVariable Long id) {
         orderService.deleteOrder(id);
-        return ResponseEntity.ok("Order deleted successfully");
+        return "redirect:/orders/all";
     }
 
-    @GetMapping("/status/{status}")
-    public ResponseEntity<List<Order>> getOrdersByStatus(@PathVariable String status) {
-        List<Order> orders = orderService.getOrdersByStatus(status);
-        return ResponseEntity.ok(orders);
+    @GetMapping("/search")
+    public String searchOrderById(@RequestParam Long id, Model model) {
+        try {
+            Order order = orderService.getOrderById(id);
+            model.addAttribute("order", order);
+            return "order-details";
+        } catch (RuntimeException e) {
+            model.addAttribute("error", "Order not found with ID: " + id);
+            return "orders";
+        }
     }
 }
